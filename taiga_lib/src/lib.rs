@@ -1,11 +1,11 @@
 mod routes;
 
-use routes::AuthType;
+use routes::{AuthType, CreateIssue, request};
 
 // TODO Make this an ENV or Config
 const BASE_URL:&str = "https://api.taiga.io";
 
-struct Project{
+pub struct Project{
     id:String,
     structure:ProjectStructure,
 }
@@ -15,7 +15,7 @@ impl Project {
         todo!();
     }
 }
-struct ProjectStructure{
+pub struct ProjectStructure{
     // Get the possible statuses of the project. 
     // These should then be presented to the user, so they can use the exact statusus 
     task_status:Vec<String>,
@@ -47,12 +47,13 @@ impl ProjectStructure{
 // Struct or enum?
 
 
-struct Task{
+pub struct Task{
     info:BasicInfo,
 }
 
-struct Issue {
+pub struct Issue {
     id: Option<String>,
+    number: Option<String>,
     subject: String,
     project: String,
     description: Option<String>,
@@ -66,7 +67,7 @@ struct Issue {
     priority: Option<String>,
     typeid: Option<String>,
     tags: Option<String>,
-    watchers: Vec<String>,
+    watchers: Option<Vec<String>>,
 }
 
 impl TaigaActions for Issue{
@@ -74,25 +75,38 @@ impl TaigaActions for Issue{
         todo!()
     }
 
-    fn create(&mut self){
-    
-        let route = CreateIssue;
+    fn create(&mut self, auth_key:&Option<String>) -> Result<String,String> {
+        
+        let route = CreateIssue{issue:&self};
+        
+        let response = request(&BASE_URL.to_string(), &auth_key, &route)?; //TODO key is copied here :(
 
+        let id = response["id"].as_str();
+        let number = response["ref"].as_str();
+        
+        if let Some(id) = id{
+           self.id = Some(id.to_owned());
+        }
+        
+        if let Some(number) = number{
+           self.number = Some(number.to_owned());
+        }
 
-
-
+        Ok("Succesfully created".to_string())
 
     }
 
-    fn update(&mut self, subject:String, description:String) {
+    fn update(&mut self) {
         todo!()
     }
+
+ 
 }
 
-struct UserStory{
+pub struct UserStory{
     info:BasicInfo
 }
-struct BasicInfo{
+pub struct BasicInfo{
 
     id:String,
     project:String,
@@ -107,7 +121,7 @@ trait TaigaActions {
     // TODO find better name for this trait
     fn get(&mut self, id:String) -> Self;
     
-    fn create(&mut self);
+    fn create(&mut self, auth_key:&Option<String>)-> Result<String, String>;
 
     fn update(&mut self);
 
@@ -120,7 +134,7 @@ pub fn authentificate(auth_type:&AuthType) -> Result<String, String>{
 
     let route = routes::Authentificate{auth_type:&auth_type};
 
-    let response_result =  routes::request(&BASE_URL.to_string(), None, &route);
+    let response_result =  routes::request(&BASE_URL.to_string(), &None, &route);
        
     let binding = response_result.unwrap();
     let authkey = binding["auth_token"].as_str().unwrap();
@@ -133,13 +147,12 @@ pub fn authentificate(auth_type:&AuthType) -> Result<String, String>{
 
 #[cfg(test)]
 mod tests{
-    use crate::routes::*;
+    use crate::{routes::*, Issue, BASE_URL, TaigaActions};
 
     // "Services"
     #[test]
     fn test_functions(){
 
-        // Loads the .env file
         use dotenv::dotenv;
         dotenv().ok();
         
@@ -147,9 +160,39 @@ mod tests{
             username: std::env::var("taiga_username").expect("Username not found"), 
             password: std::env::var("taiga_password").expect("Password not found")};
 
-        let authkey = crate::authentificate(&auth).unwrap();
+        let route = Authentificate{
+           auth_type:&auth                        
+        };
+
+        let response_json = request(&BASE_URL.to_string(),&None, &route).expect("Request failed");
+        
+        let auth_key:Option<String>= Some(response_json["auth_token"].as_str().unwrap().to_string());
 
         println!("Authentificated");
+            
+        let mut issue = Issue{
+            id: None,
+            number:None, 
+            subject: String::from("Test!"),
+            project: std::env::var("taiga_project_id").expect("No project found in .env"),
+            description:Some(String::from("TEST")),
+            assigned_to: None,
+            blocked_note: None,
+            is_blocked: None,
+            is_closed: None,
+            milestone: None,
+            status: None,
+            severity: None,
+            priority: None,
+            typeid: None,
+            tags: None,
+            watchers: None,
+        };
+
+        let response = issue.create(&auth_key);
+
+        println!("Created my issue! {}", response.unwrap_err())
+
         
         
          
