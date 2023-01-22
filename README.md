@@ -16,7 +16,9 @@ To run the test, you need to set environment variables with information used to 
 Create a .env file and put it in the source of the project that is being tested. 
 
 ## taiga_lib
+```
 taiga_project_id=<taiga project id> #Create a new project on TAIGA so the test dont mess up your actual Taiga projects
 taiga_username=<your taiga username>
 taiga_password=<your taiga password>
 RUST_LOG=DEBUG
+``` 
