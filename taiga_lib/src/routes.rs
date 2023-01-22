@@ -174,7 +174,6 @@ pub fn request(base_url:&String, opt_authkey:Option<&String>,route:&dyn TaigaRou
 #[cfg(test)]
 mod tests{
 
-    use serde_json::Value;
     use crate::{routes::*, BASE_URL};
 
     #[test]
