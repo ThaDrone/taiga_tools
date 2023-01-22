@@ -92,11 +92,11 @@ impl<'a> TaigaRoute for UserInfoMeRequest<'a>{
 
 }
 
-pub struct CreateIssue{
-    issue:Issue,
+pub struct CreateIssue<'a>{
+    issue:&'a Issue,
 }
 
-impl TaigaRoute for CreateIssue {
+impl<'a> TaigaRoute for CreateIssue<'a> {
     fn url(&self) -> String {
         String::from("/api/v1/issues")
     }
