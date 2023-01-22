@@ -71,7 +71,7 @@ struct UserInfoMeRequest<'a>{
 
 pub enum MemberID{
     Me,
-    ID(String)
+    ID(&String)
 }
 
 impl<'a> TaigaRoute for UserInfoMeRequest<'a>{
@@ -97,7 +97,7 @@ enum RequestError{
 
 // TODO implement Error in Request Error
 
-pub fn request(base_url:&String, opt_authkey:&Option<String>,route:&dyn TaigaRoute) -> Result<serde_json::Value, String>{
+pub fn request(base_url:&String, opt_authkey:Option<&String>,route:&dyn TaigaRoute) -> Result<serde_json::Value, String>{
 
     // Check if an authkey was given. If not, it will check if the Authentificate route was given.
     // If it was not, it will return an error.
@@ -191,14 +191,16 @@ mod tests{
            auth_type:&auth                        
         };
 
-        let response_json = match request(&BASE_URL.to_string(),&None, &route){
-            Ok(response) => response,
-            Err(e) => panic!("Error occurred: {} ", e),
-        };
-
+        let response_json = request(&BASE_URL.to_string(),None, &route).expect("Request failed");
+        
+        let auth_key = response_json["auth_token"].as_str().unwrap().to_string();
+        
         println!("Response to our request: {}", response_json);
 
-        print!("Hello World");
+        let route = UserInfoMeRequest{id:&MemberID::Me};
+
+        let response = request(&BASE_URL.to_string(), Some(&auth_key), &route);
+
     }
 
   
