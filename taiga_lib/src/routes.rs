@@ -66,12 +66,12 @@ impl<'a> TaigaRoute for Authentificate<'a>{
 }
 
 struct UserInfoMeRequest<'a>{
-    id:&'a MemberID
+    id:&'a MemberID<'a>,
 }
 
-pub enum MemberID{
+pub enum MemberID<'a>{
     Me,
-    ID(&String)
+    ID(&'a String)
 }
 
 impl<'a> TaigaRoute for UserInfoMeRequest<'a>{
