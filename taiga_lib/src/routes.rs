@@ -3,6 +3,8 @@ use reqwest::{header::{HeaderMap, HeaderValue}, blocking::{Client, RequestBuilde
 use serde_json;
 use log::debug;
 
+use crate::Issue;
+
 
 pub trait TaigaRoute {
     fn url(&self) -> String;
@@ -90,6 +92,41 @@ impl<'a> TaigaRoute for UserInfoMeRequest<'a>{
 
 }
 
+pub struct CreateIssue{
+    issue:Issue,
+}
+
+impl TaigaRoute for CreateIssue {
+    fn url(&self) -> String {
+        String::from("/api/v1/issues")
+    }
+
+    fn form(&self) -> HashMap<&str, String> {
+        let mut form: HashMap<&str, String>  = HashMap::new();
+
+        form.insert(&"subject",self.issue.subject);
+        form.insert("project", self.issue.project);
+
+        self.issue.assigned_to.and_then(|v| {form.insert("assigned_to",v)});
+        self.issue.blocked_note.and_then(|v| {form.insert("blocked_note",v)});
+        self.issue.description.and_then(|v| {form.insert("description",v)});
+        self.issue.is_blocked.and_then(|v| {form.insert("is_blocked",v.to_string())});
+        self.issue.is_closed.and_then(|v| {form.insert("is_closed",v.to_string())});
+        self.issue.milestone.and_then(|v| {form.insert("milestone",v)});
+        self.issue.status.and_then(|v| {form.insert("status",v)});
+        self.issue.severity.and_then(|v| {form.insert("severity",v)});
+        self.issue.priority.and_then(|v| {form.insert("priority",v)});
+        self.issue.typeid.and_then(|v| {form.insert("type",v)});
+        self.issue.tags.and_then(|v| {form.insert("tags",v)});
+
+        form
+    }
+
+    fn method(&self) -> Method{
+        Method::POST
+    }
+    
+}
 enum RequestError{
     Reqwest(reqwest::Error),
     NoAuthKey,
