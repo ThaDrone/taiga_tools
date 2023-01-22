@@ -10,3 +10,13 @@ The first application will be a CLI. My personal use of this CLI will be to inte
 
 ## Rust
 The reason for the project existance is that I want to learn the rust language. Therefore as much code as possible will be in written in rust. 
+
+# Testing
+To run the test, you need to set environment variables with information used to authentificate / test
+Create a .env file and put it in the source of the project that is being tested. 
+
+## taiga_lib
+taiga_project_id=<taiga project id> #Create a new project on TAIGA so the test dont mess up your actual Taiga projects
+taiga_username=<your taiga username>
+taiga_password=<your taiga password>
+RUST_LOG=DEBUG
