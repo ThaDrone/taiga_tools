@@ -638,6 +638,9 @@ dependencies = [
 [[package]]
 name = "taiga_cli"
 version = "0.1.0"
+dependencies = [
+ "taiga_lib",
+]
 
 [[package]]
 name = "taiga_lib"
