@@ -2,13 +2,20 @@ mod routes;
 
 use routes::AuthType;
 
-
-
 // TODO Make this an ENV or Config
 const BASE_URL:&str = "https://api.taiga.io";
 
-
 struct Project{
+    id:String,
+    structure:ProjectStructure,
+}
+
+impl Project {
+    pub fn list_owned()-> Vec<String>{
+        todo!();
+    }
+}
+struct ProjectStructure{
     // Get the possible statuses of the project. 
     // These should then be presented to the user, so they can use the exact statusus 
     task_status:Vec<String>,
@@ -18,16 +25,22 @@ struct Project{
     issue_priorities:Vec<String>,
     issue_types:Vec<String>,
 
+
     // TODO complete this. 
 }
 
-impl Project{
+impl ProjectStructure{
 
-    pub fn new(project_id:String) -> Project {
+    // TODO Get all project structs
+    pub fn new(id:String) -> ProjectStructure {
         todo!() // Make request so we can fill out the struct 
 
         // TODO This is a place where we could use ASYNC
         //https://rust-lang.github.io/async-book/01_getting_started/02_why_async.html
+    }
+
+    fn get_info(){
+
     }
 
 }
@@ -38,8 +51,42 @@ struct Task{
     info:BasicInfo,
 }
 
-struct Issue{
-    info:BasicInfo,
+struct Issue {
+    id: Option<String>,
+    subject: String,
+    project: String,
+    description: Option<String>,
+    assigned_to: Option<String>,
+    blocked_note: Option<String>,
+    is_blocked: Option<bool>,
+    is_closed: Option<bool>,
+    milestone: Option<String>,
+    status: Option<String>,
+    severity: Option<String>,
+    priority: Option<String>,
+    typeid: Option<String>,
+    tags: Option<String>,
+    watchers: Vec<String>,
+}
+
+impl TaigaActions for Issue{
+    fn get(&mut self, id:String) -> Self {
+        todo!()
+    }
+
+    fn create(&mut self){
+    
+        let route = CreateIssue;
+
+
+
+
+
+    }
+
+    fn update(&mut self, subject:String, description:String) {
+        todo!()
+    }
 }
 
 struct UserStory{
@@ -58,11 +105,11 @@ struct BasicInfo{
 trait TaigaActions {
     // TODO implement these in the Task / Usestories / Issues
     // TODO find better name for this trait
-    fn get(&mut self, id:String) -> Box<dyn TaigaActions>;
+    fn get(&mut self, id:String) -> Self;
     
-    fn create(&mut self, subject:String, description:String) -> Box<dyn TaigaActions>;
+    fn create(&mut self);
 
-    fn update(&mut self, subject:String, description:String) ;
+    fn update(&mut self);
 
 }
 
@@ -70,7 +117,6 @@ trait TaigaActions {
 pub fn authentificate(auth_type:&AuthType) -> Result<String, String>{
    
     //TODO: #92 split these authentification modules into seperate functions based on the Authtype
-
 
     let route = routes::Authentificate{auth_type:&auth_type};
 
@@ -82,6 +128,8 @@ pub fn authentificate(auth_type:&AuthType) -> Result<String, String>{
     Ok(authkey.to_owned())
 
 }
+
+
 
 #[cfg(test)]
 mod tests{
@@ -101,11 +149,9 @@ mod tests{
 
         let authkey = crate::authentificate(&auth).unwrap();
 
-        println!("Response to our request: {}", authkey);
-
-        print!("Hello World");
-
+        println!("Authentificated");
+        
+        
+         
     }
 }
-
-
