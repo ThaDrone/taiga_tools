@@ -93,7 +93,7 @@ impl<'a> TaigaRoute for UserInfoMeRequest<'a>{
 }
 
 pub struct CreateIssue<'a>{
-    issue:&'a Issue,
+    pub(crate) issue:&'a Issue,
 }
 
 impl<'a> TaigaRoute for CreateIssue<'a> {
@@ -104,20 +104,21 @@ impl<'a> TaigaRoute for CreateIssue<'a> {
     fn form(&self) -> HashMap<&str, String> {
         let mut form: HashMap<&str, String>  = HashMap::new();
 
-        form.insert(&"subject",self.issue.subject);
-        form.insert("project", self.issue.project);
+        // TODO check if this can be more efficient with borrows. Might get really messy though
+        form.insert("subject",self.issue.subject.to_owned());
+        form.insert("project", self.issue.project.to_owned());
 
-        self.issue.assigned_to.and_then(|v| {form.insert("assigned_to",v)});
-        self.issue.blocked_note.and_then(|v| {form.insert("blocked_note",v)});
-        self.issue.description.and_then(|v| {form.insert("description",v)});
-        self.issue.is_blocked.and_then(|v| {form.insert("is_blocked",v.to_string())});
-        self.issue.is_closed.and_then(|v| {form.insert("is_closed",v.to_string())});
-        self.issue.milestone.and_then(|v| {form.insert("milestone",v)});
-        self.issue.status.and_then(|v| {form.insert("status",v)});
-        self.issue.severity.and_then(|v| {form.insert("severity",v)});
-        self.issue.priority.and_then(|v| {form.insert("priority",v)});
-        self.issue.typeid.and_then(|v| {form.insert("type",v)});
-        self.issue.tags.and_then(|v| {form.insert("tags",v)});
+        self.issue.assigned_to.to_owned().and_then(|v| {form.insert("assigned_to",v)});
+        self.issue.blocked_note.to_owned().and_then(|v| {form.insert("blocked_note",v)});
+        self.issue.description.to_owned().and_then(|v| {form.insert("description",v)});
+        self.issue.is_blocked.to_owned().and_then(|v| {form.insert("is_blocked",v.to_string())});
+        self.issue.is_closed.to_owned().and_then(|v| {form.insert("is_closed",v.to_string())});
+        self.issue.milestone.to_owned().and_then(|v| {form.insert("milestone",v)});
+        self.issue.status.to_owned().and_then(|v| {form.insert("status",v)});
+        self.issue.severity.to_owned().and_then(|v| {form.insert("severity",v)});
+        self.issue.priority.to_owned().and_then(|v| {form.insert("priority",v)});
+        self.issue.typeid.to_owned().and_then(|v| {form.insert("type",v)});
+        self.issue.tags.to_owned().and_then(|v| {form.insert("tags",v)});
 
         form
     }
@@ -134,7 +135,7 @@ enum RequestError{
 
 // TODO implement Error in Request Error
 
-pub fn request(base_url:&String, opt_authkey:Option<&String>,route:&dyn TaigaRoute) -> Result<serde_json::Value, String>{
+pub fn request(base_url:&String, opt_authkey:&Option<String>,route:&dyn TaigaRoute) -> Result<serde_json::Value, String>{
 
     // Check if an authkey was given. If not, it will check if the Authentificate route was given.
     // If it was not, it will return an error.
@@ -227,7 +228,7 @@ mod tests{
            auth_type:&auth                        
         };
 
-        let response_json = request(&BASE_URL.to_string(),None, &route).expect("Request failed");
+        let response_json = request(&BASE_URL.to_string(),&None, &route).expect("Request failed");
         
         let auth_key = response_json["auth_token"].as_str().unwrap().to_string();
         
@@ -235,7 +236,7 @@ mod tests{
 
         let route = UserInfoMeRequest{id:&MemberID::Me};
 
-        let response = request(&BASE_URL.to_string(), Some(&auth_key), &route);
+        let response = request(&BASE_URL.to_string(), &Some(auth_key), &route);
 
     }
 
