@@ -53,7 +53,7 @@ trait LocalStorage {
 
 #[cfg(test)]
 mod tests{
-    use crate::{Session, LocalStorage};
+    use super::*;
 
     #[test]
     fn test_localstorage(){
