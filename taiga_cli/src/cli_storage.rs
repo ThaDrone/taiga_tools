@@ -11,48 +11,60 @@ const SES_FILENAME:&str = "taigacli_session.toml";
 use toml::{to_string};
 
 
+pub enum LocalStorageErrors{
+
+    IOerror(io::Error),
+    TOMLerror(toml::ser::Error) 
+
+}
+
 #[derive(Serialize, Deserialize)]
-struct Session {
-    auth_key: String,
+pub struct Session {
+    pub auth_key: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
 struct Config {
-    project_id: String,
+    project_id: Option<String>,
 }
 
 impl LocalStorage for Session {
     /// Returns the file location of this [`Session`].
-    fn file_location(&self) -> String {
+    fn file_location() -> String {
         SES_FILENAME.to_string()
     }
 }
 
 impl LocalStorage for Config {
+    
     /// Returns the file location of this [`Config`].
-    fn file_location(&self) -> String {
+    fn file_location() -> String {
         CFG_FILENAME.to_string()
     }
+
 }
 
-trait LocalStorage {
+pub trait LocalStorage {
+
+    /// Generic formula to save the data inside the struct to a file. 
     fn save(&self) -> Result<(),()> where Self: Serialize{
         let toml_str = to_string(self).unwrap();
-        let file_location = self.file_location();
+        let file_location = Self::file_location();
         fs::write(file_location, toml_str).unwrap();
 
         Ok(())
     }
 
-    fn load(&mut self) -> Result<(),()> where Self: for<'a> Deserialize<'a>{
-        
-        let file_location = self.file_location();
-        let toml_bytes = fs::read_to_string(file_location).unwrap();
-        *self = toml::from_str(&toml_bytes).unwrap();
-        Ok(())
+    /// Generic formula load the data from a string, and return it into the struct. 
+    fn load() -> Option<Self> where Self: for<'a> Deserialize<'a> { 
+        let file_location = Self::file_location();
+        let toml_str = fs::read_to_string(file_location).unwrap();
+        let data:Self = toml::from_str(&toml_str).unwrap();
+        Some(data)
     }
+    // fn load<T:LocalStorage>() -> Result<T, ()>;
 
-    fn file_location(&self) -> String;
+    fn file_location() -> String;
 }
 
 
