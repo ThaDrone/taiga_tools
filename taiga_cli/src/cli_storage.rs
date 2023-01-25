@@ -39,7 +39,7 @@ pub struct Session {
 }
 
 #[derive(Serialize, Deserialize)]
-struct Config {
+pub struct Config {
     project_id: String,
 }
 
