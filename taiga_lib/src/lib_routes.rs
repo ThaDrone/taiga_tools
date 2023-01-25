@@ -30,7 +30,7 @@ pub trait TaigaRoute {
     fn request(&self,base_url:&String, opt_auth_key:&Option<String>) -> Result<serde_json::Value, String>{
 
 
-        let url = base_url.to_owned();
+        let mut url = base_url.to_owned();
         url.push_str(&self.url());
 
         // Get the headers, insert the default headers as well
