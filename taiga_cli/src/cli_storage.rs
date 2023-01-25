@@ -1,6 +1,6 @@
-use std::{io};
+use std::{io, error, fmt};
 use std::fs;
-use serde::{Deserialize, ser};
+use serde::{Deserialize};
 use toml;
 use serde::Serialize;
 
@@ -10,12 +10,27 @@ const SES_FILENAME:&str = "taigacli_session.toml";
 
 use toml::{to_string};
 
-
-pub enum LocalStorageErrors{
+#[derive(Debug)]
+pub enum Error{
 
     IOerror(io::Error),
-    TOMLerror(toml::ser::Error) 
+    TomlSerError(toml::ser::Error),
+    TomlDeError(toml::de::Error),
 
+} 
+
+impl error::Error for Error{}
+
+impl fmt::Display for Error{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+
+        match &self{
+            Error::IOerror(e) => format!("IO error, something went wrong reading or writing the file: {}",e).fmt(f),
+            Error::TomlSerError(e) => format!("TOML Error, something went wrong writing TOML data: {}",e).fmt(f),
+            Error::TomlDeError(e) => format!("TOML Error, something went wrong reading TOML data: {}",e).fmt(f),
+
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -47,24 +62,41 @@ impl LocalStorage for Config {
 pub trait LocalStorage {
 
     /// Generic formula to save the data inside the struct to a file. 
-    fn save(&self) -> Result<(),()> where Self: Serialize{
-        let toml_str = to_string(self).unwrap();
+    fn save(&self) -> Result<(),Error> where Self: Serialize{
+
+        let toml_str = match to_string(self) {
+            Ok(data) => data,
+            Err(err) => return Err(Error::TomlSerError(err)),
+        };
+        
         let file_location = Self::file_location();
-        fs::write(file_location, toml_str).unwrap();
+        match fs::write(file_location, toml_str) {
+            Ok(data) => data,
+            Err(err) => return Err(Error::IOerror(err)),
+        };
 
         Ok(())
     }
 
     /// Generic formula load the data from a string, and return it into the struct. 
-    fn load() -> Option<Self> where Self: for<'a> Deserialize<'a> { 
+    fn load() -> Result<Self,Error> where Self: for<'a> Deserialize<'a> { 
+
         let file_location = Self::file_location();
-        let toml_str = fs::read_to_string(file_location).unwrap();
-        let data:Self = toml::from_str(&toml_str).unwrap();
-        Some(data)
+
+        let buf = match fs::read_to_string(file_location) {
+            Ok(data) => data,
+            Err(err) => return Err(Error::IOerror(err)),
+        };
+
+        let data:Self = match toml::from_str(&buf) {
+            Ok(data) => data,
+            Err(err) => return Err(Error::TomlDeError(err)),
+        };
+        Ok(data)
     }
-    // fn load<T:LocalStorage>() -> Result<T, ()>;
 
     fn file_location() -> String;
+
 }
 
 
