@@ -105,10 +105,15 @@ mod tests{
     use super::*;
 
     #[test]
-    fn test_localstorage(){
+    fn test_sesssion(){
+            println!("Helloworld!");
 
-        let keys = Session{auth_key:"1234".to_string()};
-        keys.save().unwrap();
+            let session = Session{auth_key: "1234".to_owned() };
+            session.save();
+
+            let new_session = Session::load().unwrap();
+
+            println!("Read the authkey: {}", &new_session.auth_key);
+        }
 
     }
-}
