@@ -20,12 +20,12 @@ pub enum LocalStorageErrors{
 
 #[derive(Serialize, Deserialize)]
 pub struct Session {
-    pub auth_key: Option<String>,
+    pub auth_key: String,
 }
 
 #[derive(Serialize, Deserialize)]
 struct Config {
-    project_id: Option<String>,
+    project_id: String,
 }
 
 impl LocalStorage for Session {
