@@ -1,6 +1,6 @@
 use std::{io};
 use std::fs;
-use serde::Deserialize;
+use serde::{Deserialize, ser};
 use toml;
 use serde::Serialize;
 
@@ -9,6 +9,7 @@ const CFG_FILENAME:&str = "taigacli_config.toml";
 const SES_FILENAME:&str = "taigacli_session.toml";
 
 use toml::{to_string};
+
 
 #[derive(Serialize, Deserialize)]
 struct Session {
@@ -35,16 +36,20 @@ impl LocalStorage for Config {
 }
 
 trait LocalStorage {
-    fn save(&self) -> Result<(), io::Error> where Self: Serialize{
-        let toml_str = to_string(self).expect("Error deserialsing the struct");
+    fn save(&self) -> Result<(),()> where Self: Serialize{
+        let toml_str = to_string(self).unwrap();
         let file_location = self.file_location();
-        fs::write(file_location, toml_str)?;
+        fs::write(file_location, toml_str).unwrap();
 
         Ok(())
     }
 
-    fn load(&mut self) -> Result<(), io::Error> {
-        todo!()
+    fn load(&mut self) -> Result<(),()> where Self: for<'a> Deserialize<'a>{
+        
+        let file_location = self.file_location();
+        let toml_bytes = fs::read_to_string(file_location).unwrap();
+        *self = toml::from_str(&toml_bytes).unwrap();
+        Ok(())
     }
 
     fn file_location(&self) -> String;
@@ -59,7 +64,7 @@ mod tests{
     fn test_localstorage(){
 
         let keys = Session{auth_key:"1234".to_string()};
-        keys.save();
+        keys.save().unwrap();
 
     }
 }
