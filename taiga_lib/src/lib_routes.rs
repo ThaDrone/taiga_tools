@@ -1,5 +1,5 @@
 use std::{collections::HashMap};
-use reqwest::{header::{HeaderMap, HeaderValue}, blocking::{Client, RequestBuilder}, StatusCode, Method};
+use reqwest::{header::{HeaderMap, HeaderValue}, blocking::{Client}, StatusCode, Method, RequestBuilder};
 use serde_json;
 use log::debug;
 
@@ -17,19 +17,85 @@ pub trait TaigaRoute {
         HashMap::new()
     }
 
-    fn needs_authkey(&self) -> bool{
+    fn needs_authkey() -> bool{
         true
     }
 
     fn method(&self) -> Method{
         Method::GET
     }
+    
+    /// Request method for structs implementing the `Taigaroute` trait
+    /// Takes the base url (this should be fetched from a config file)
+    fn request(&self,base_url:&String, opt_auth_key:&Option<String>) -> Result<serde_json::Value, String>{
+
+
+        let url = base_url.to_owned();
+        url.push_str(&self.url());
+
+        // Get the headers, insert the default headers as well
+        let mut headers = self.headers();
+        headers.insert("Content-Type",HeaderValue::from_static("application/json"));
+
+        let method = self.method();
+        
+        let form = self.form();
+
+        // let mut builder = Client::new().request(method, &url);
+        let mut builder = Client::new()
+            .request(method, &url)
+            .headers(headers)
+            .form(&form);
+            
+        /*
+        Check if an authkey was given. If not, it will check if the Authentificate route was given.
+        If it was not, it will return an error.
+        We cannot pass a empty string in the bearer_auth, then the Taiga server will panic. 
+        */
+        if let (Some(key), true) = (opt_auth_key, Self::needs_authkey()) { 
+            // Ideally this checked at the start of the function,
+            // but I dont know if I can make the request builder for only the bearer auth, and later merge it into the rest. 
+            builder = builder.bearer_auth(key);
+            
+        }
+        
+        debug!("URL {} ", url);
+
+        let response = builder.send();
+
+        // Check if the status is correct
+        let response = match response {
+            Ok(resp) =>  resp,
+            Err(e) => return Err(e.to_string()),
+        };
+
+        // Check if the status is correct
+        match response.status(){
+            StatusCode::OK => (),
+            code => return Err(format!("Statuscode: {}, URL: {} ", code, url)),
+        };
+
+        // Check if the body is correct
+        let body = match response.text() {
+            Ok(body) => body,
+            Err(e) => return Err(format!("Could not read the body of the response: {} ",e.to_string())),
+        };
+
+        match serde_json::from_str(&body){
+            Ok(json) => Ok(json),
+            Err(e) => Err(format!("Could not convert the response to JSON: {}",e.to_string())),
+        }
+
+
+    } 
+    
 }
+/// Enum that defines the options that can be used to authentificate to Taiga.
 pub enum AuthType {
     Taiga{username:String,password:String}, 
-    Github{username:String, password:String}, //TODO: #94 add github username + password login
-    GithubToken(String), //TODO: #97 add github personal api token login
-    //TODO: #98 add missing authtypes
+    Github{username:String, password:String}, //TODO: #1 add github username + password login
+    GithubToken(String), //TODO: #2 add github personal api token login
+    // TODO #3 Add more auth methods
 }
 
 pub struct Authentificate<'a>{
@@ -58,7 +124,7 @@ impl<'a> TaigaRoute for Authentificate<'a>{
         form
     }
 
-    fn needs_authkey(&self) -> bool {
+    fn needs_authkey() -> bool {
         false
     }
 
@@ -77,6 +143,8 @@ pub enum MemberID<'a>{
 }
 
 impl<'a> TaigaRoute for UserInfoMeRequest<'a>{
+    
+    
     fn url(&self) -> String {   
         
         let url = String::from("api/v1/users/{id}");
@@ -126,93 +194,22 @@ impl<'a> TaigaRoute for CreateIssue<'a> {
     fn method(&self) -> Method{
         Method::POST
     }
-    
+    // TODO implement Error in Request Error
+  
 }
 enum RequestError{
     Reqwest(reqwest::Error),
     NoAuthKey,
 }
 
-// TODO implement Error in Request Error
 
-pub fn request(base_url:&String, opt_authkey:&Option<String>,route:&dyn TaigaRoute) -> Result<serde_json::Value, String>{
-
-    // Check if an authkey was given. If not, it will check if the Authentificate route was given.
-    // If it was not, it will return an error.
-    let mut auth_key:&String = &String::new();
-    
-    if route.needs_authkey() {
-        auth_key = match opt_authkey {
-            Some(key) =>  &key,
-            None => return Err("No authkey was found".to_string()),
-        }
-    }
-   
-    let method = route.method();
-
-    // Get URL
-    let mut url = base_url.to_owned();
-    let end_point = route.url();
-    
-    url.push_str(&end_point);
-
-    // Getting the Headers
-    let mut headers = route.headers();
-    headers.insert("Content-Type",HeaderValue::from_static("application/json"));
-
-    let form = route.form();
-
-    // Debug
-    debug!("Auth key {}", auth_key);
-    debug!("URL {} ", url);
-    // debug!("Headers {}", headers);
-    // debug!("Form {}", &form);
-
-    let client = Client::new();
-
-    let mut builder = client
-        .request(method, &url)
-        .headers(headers)
-        .form(&form);
-    
-    if let Some(key) = opt_authkey {
-        builder = builder.bearer_auth(key);
-    }
-
-    let response = builder.send();
-
-    // Check if the status is correct
-    let response = match response {
-        Ok(resp) =>  resp,
-        Err(e) => return Err(e.to_string()),
-    };
-
-    // Check if the status is correct
-    match response.status(){
-        StatusCode::OK => (),
-        code => return Err(format!("Statuscode: {}, URL: {} ", code, url)),
-    };
-
-    // Check if the body is correct
-    let body = match response.text() {
-        Ok(body) => body,
-        Err(e) => return Err(format!("Could not read the body of the response: {} ",e.to_string())),
-    };
-
-    match serde_json::from_str(&body){
-        Ok(json) => Ok(json),
-        Err(e) => Err(format!("Could not convert the response to JSON: {}",e.to_string())),
-    }
-
-
-}
 
 
 
 #[cfg(test)]
 mod tests{
 
-    use crate::{routes::*, BASE_URL};
+    use crate::{lib_routes::*, BASE_URL};
 
     #[test]
     fn test_routes(){
@@ -228,7 +225,7 @@ mod tests{
            auth_type:&auth                        
         };
 
-        let response_json = request(&BASE_URL.to_string(),&None, &route).expect("Request failed");
+        let response_json = route.request(&BASE_URL.to_string(),&None).expect("Request failed");
         
         let auth_key = response_json["auth_token"].as_str().unwrap().to_string();
         
@@ -236,7 +233,7 @@ mod tests{
 
         let route = UserInfoMeRequest{id:&MemberID::Me};
 
-        let response = request(&BASE_URL.to_string(), &Some(auth_key), &route);
+        let response = route.request(&BASE_URL.to_string(), &Some(auth_key));
 
     }
 
