@@ -1,6 +1,6 @@
-mod routes;
+pub mod lib_routes;
 
-use routes::{AuthType, CreateIssue, request};
+use lib_routes::{AuthType, CreateIssue, TaigaRoute};
 
 // TODO Make this an ENV or Config
 const BASE_URL:&str = "https://api.taiga.io";
@@ -15,9 +15,9 @@ impl Project {
         todo!();
     }
 }
+/// Get the possible statuses of the project. 
+/// These should then be presented to the user, so they can use the exact statusus 
 pub struct ProjectStructure{
-    // Get the possible statuses of the project. 
-    // These should then be presented to the user, so they can use the exact statusus 
     task_status:Vec<String>,
     
     // Get a vector with the possible states, possibly make this hashmaps? 
@@ -79,7 +79,7 @@ impl TaigaActions for Issue{
         
         let route = CreateIssue{issue:&self};
         
-        let response = request(&BASE_URL.to_string(), &auth_key, &route)?; //TODO key is copied here :(
+        let response = route.request(&BASE_URL.to_string(), &auth_key)?; //TODO key is copied here :(
 
         let id = response["id"].as_str();
         let number = response["ref"].as_str();
@@ -128,26 +128,26 @@ trait TaigaActions {
 }
 
 // Functions
-pub fn authentificate(auth_type:&AuthType) -> Result<String, String>{
+// pub fn authentificate(auth_type:&AuthType) -> Result<String, String>{
    
-    //TODO: #92 split these authentification modules into seperate functions based on the Authtype
+//     //TODO: #92 split these authentification modules into seperate functions based on the Authtype
 
-    let route = routes::Authentificate{auth_type:&auth_type};
+//     let route = lib_routes::Authentificate{auth_type:&auth_type};
 
-    let response_result =  routes::request(&BASE_URL.to_string(), &None, &route);
+//     let response_result =  lib_routes::request(&BASE_URL.to_string(), &None, &route);
        
-    let binding = response_result.unwrap();
-    let authkey = binding["auth_token"].as_str().unwrap();
+//     let binding = response_result.unwrap();
+//     let authkey = binding["auth_token"].as_str().unwrap();
 
-    Ok(authkey.to_owned())
+//     Ok(authkey.to_owned())
 
-}
+// }
 
 
 
 #[cfg(test)]
 mod tests{
-    use crate::{routes::*, Issue, BASE_URL, TaigaActions};
+    use crate::{lib_routes::*, Issue, BASE_URL, TaigaActions};
 
     // "Services"
     #[test]
@@ -164,7 +164,7 @@ mod tests{
            auth_type:&auth                        
         };
 
-        let response_json = request(&BASE_URL.to_string(),&None, &route).expect("Request failed");
+        let response_json = route.request(&BASE_URL.to_string(),&None).expect("Request failed");
         
         let auth_key:Option<String>= Some(response_json["auth_token"].as_str().unwrap().to_string());
 
