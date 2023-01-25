@@ -5,7 +5,12 @@ use log::debug;
 
 use crate::Issue;
 
-
+/// This is supposed to be an abstraction for the api.
+/// Try however to not use these functions directly. 
+/// Instead use the items in [`lib_models`]. This is a kind of "ORM". 
+/// Here will be for example a Struct called `Issue`, then you can either fill out the structs and create it on Taiga using 
+/// 'let my_issue = Issue{.<your data>.};
+/// my_issue.create();'
 pub trait TaigaRoute {
     fn url(&self) -> String;
 
