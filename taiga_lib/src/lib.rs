@@ -1,6 +1,7 @@
 pub mod lib_routes;
+pub mod lib_models;
 
-use lib_routes::{AuthType, CreateIssue, TaigaRoute};
+
 
 // TODO Make this an ENV or Config
 const BASE_URL:&str = "https://api.taiga.io";
@@ -29,7 +30,8 @@ const BASE_URL:&str = "https://api.taiga.io";
 
 #[cfg(test)]
 mod tests{
-    use crate::{lib_routes::*, Issue, BASE_URL, TaigaActions};
+    use crate::{lib_routes::*, BASE_URL};
+    use crate::lib_models::{Issue, TaigaActions};
 
     // "Services"
     #[test]
