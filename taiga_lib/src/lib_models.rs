@@ -1,3 +1,5 @@
+use crate::lib_routes::{CreateIssue, TaigaRoute};
+
 
 
 /// Taiga "ORM". 
@@ -9,25 +11,26 @@ pub struct Task{
 }
 
 pub struct Issue {
-    id: Option<String>,
-    number: Option<String>,
-    subject: String,
-    project: String,
-    description: Option<String>,
-    assigned_to: Option<String>,
-    blocked_note: Option<String>,
-    is_blocked: Option<bool>,
-    is_closed: Option<bool>,
-    milestone: Option<String>,
-    status: Option<String>,
-    severity: Option<String>,
-    priority: Option<String>,
-    typeid: Option<String>,
-    tags: Option<String>,
-    watchers: Option<Vec<String>>,
+    pub id: Option<String>,
+    pub number: Option<String>,
+    pub subject: String,
+    pub project: String,
+    pub description: Option<String>,
+    pub assigned_to: Option<String>,
+    pub blocked_note: Option<String>,
+    pub is_blocked: Option<bool>,
+    pub is_closed: Option<bool>,
+    pub milestone: Option<String>,
+    pub status: Option<String>,
+    pub severity: Option<String>,
+    pub priority: Option<String>,
+    pub typeid: Option<String>,
+    pub tags: Option<String>,
+    pub watchers: Option<Vec<String>>,
 }
 
 impl TaigaActions for Issue{
+
     fn get(&mut self, id:String) -> Self {
         todo!()
     }
@@ -36,7 +39,7 @@ impl TaigaActions for Issue{
         
         let route = CreateIssue{issue:&self};
         
-        let response = route.request(&BASE_URL.to_string(), &auth_key)?; //TODO key is copied here :(
+        let response = route.request(&crate::BASE_URL.to_string(), &auth_key)?; //TODO key is copied here :(
 
         let id = response["id"].as_str();
         let number = response["ref"].as_str();
@@ -73,7 +76,7 @@ pub struct BasicInfo{
  
 }
 
-trait TaigaActions {
+pub trait TaigaActions {
     // TODO implement these in the Task / Usestories / Issues
     // TODO find better name for this trait
     fn get(&mut self, id:String) -> Self;
