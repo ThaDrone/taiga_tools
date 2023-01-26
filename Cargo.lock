@@ -674,6 +674,7 @@ dependencies = [
 name = "taiga_cli"
 version = "0.1.0"
 dependencies = [
+ "dotenv",
  "log",
  "rpassword",
  "serde",
