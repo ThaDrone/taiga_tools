@@ -1,9 +1,12 @@
 use std::{collections::HashMap};
-use reqwest::{header::{HeaderMap, HeaderValue}, blocking::{Client}, StatusCode, Method, RequestBuilder};
+use reqwest::{header::{HeaderMap, HeaderValue}, blocking::{Client}, StatusCode, Method };
 use serde_json;
 use log::debug;
 
-use crate::Issue;
+use crate::lib_models::Issue;
+
+
+
 
 /// This is supposed to be an abstraction for the api.
 /// Try however to not use these functions directly. 
