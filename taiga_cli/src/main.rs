@@ -1,7 +1,7 @@
 use std::io;
 
 use cli_storage::{LocalStorage, Session};
-use taiga_lib::lib_routes::{self, TaigaRoute, AuthType};
+use taiga_lib::lib_routes::{self, TaigaRoute, AuthType, Authentificate};
 
 mod cli_storage;
 use rpassword::read_password;
@@ -43,11 +43,10 @@ fn initialize() -> Option<()>{
 /// This function will prompt the user to login. 
 fn login() -> Session{
 
+
     let mut username=  String::new();
-    let mut password=  String::new();
 
     println!("Provide TAIGA username:");
-    
     io::stdin()
         .read_line(&mut username)
         .expect("Failed to read line");
@@ -57,13 +56,17 @@ fn login() -> Session{
     std::io::stdout().flush().unwrap();
     let password = read_password().unwrap();
 
+    let username =  username.trim().to_string();
+    let password = password.trim().to_string();
+
     println!("username:  {}",username);
     println!("password:  {}",password);
 
     let auth_type = lib_routes::AuthType::Taiga{
-        username: username,
-        password: password,
+        username,
+        password,
     }; 
+
 
     if let AuthType::Taiga { username, password } = &auth_type {
         println!("username:  {}",username);
@@ -72,7 +75,8 @@ fn login() -> Session{
     let route = lib_routes::Authentificate{auth_type:&auth_type};
     let data = route.request(&BASE_URL.to_owned(), &None).expect("Could not login: ");
 
-    Session { auth_key: data["auth_key"].to_string().to_owned() }
+    let auth_key = data["auth_key"].to_string().to_owned();
+    Session {auth_key}
 
     }
 
