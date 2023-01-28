@@ -1,13 +1,32 @@
-use crate::lib_routes::{CreateIssue, TaigaRoute};
+use crate::{lib_routes::{CreateIssue, TaigaRoute, UserInfoMeRequest, MemberID}, BASE_URL};
 
 
 
 /// Taiga "ORM". 
 /// Use this library to interact with taiga.
 /// The models use the [`lib_routes`].
+pub struct User{
+    id:String,
+    username:String,
+    full_name_display:String
+}
 
+impl User{
+    fn get(auth_key:String) -> User {
+
+        let route = UserInfoMeRequest{ id: &MemberID::Me};
+        let data = route.request(&BASE_URL.to_string(), &Some(auth_key)).unwrap();
+        
+        User {
+            id: data["id"].to_string(),
+            username: data["username"].to_string(),
+            full_name_display: data["full_name_display"].to_string(),
+            
+        }
+
+    }
+}
 pub struct Task{
-    info:BasicInfo,
 }
 
 pub struct Issue {
@@ -29,7 +48,7 @@ pub struct Issue {
     pub watchers: Option<Vec<String>>,
 }
 
-impl TaigaActions for Issue{
+impl TODOActions for Issue{
 
     fn get(&mut self, id:String) -> Self {
         todo!()
@@ -63,20 +82,9 @@ impl TaigaActions for Issue{
  
 }
 
-pub struct UserStory{
-    info:BasicInfo
-}
-pub struct BasicInfo{
 
-    id:String,
-    project:String,
-    subject:String,
-    decscription:String,
-    status:String,
- 
-}
 
-pub trait TaigaActions {
+pub trait TODOActions {
     // TODO implement these in the Task / Usestories / Issues
     // TODO find better name for this trait
     fn get(&mut self, id:String) -> Self;
