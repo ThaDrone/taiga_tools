@@ -36,6 +36,7 @@ impl fmt::Display for Error{
 #[derive(Serialize, Deserialize)]
 pub struct Session {
     pub auth_key: String,
+    pub id: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -109,7 +110,7 @@ mod tests{
     fn test_sesssion(){
             println!("Helloworld!");
 
-            let session = Session{auth_key: "1234".to_owned() };
+            let session = Session{auth_key: "1234".to_owned(), id: "123".to_string()};
             session.save();
 
             let new_session = Session::load().unwrap();
