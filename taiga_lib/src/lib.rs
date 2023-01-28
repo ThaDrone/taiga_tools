@@ -6,27 +6,6 @@ pub mod lib_models;
 // TODO Make this an ENV or Config
 const BASE_URL:&str = "https://api.taiga.io";
 
-// Struct or enum?
-
-
-
-// Functions
-// pub fn authentificate(auth_type:&AuthType) -> Result<String, String>{
-   
-//     //TODO: #92 split these authentification modules into seperate functions based on the Authtype
-
-//     let route = lib_routes::Authentificate{auth_type:&auth_type};
-
-//     let response_result =  lib_routes::request(&BASE_URL.to_string(), &None, &route);
-       
-//     let binding = response_result.unwrap();
-//     let authkey = binding["auth_token"].as_str().unwrap();
-
-//     Ok(authkey.to_owned())
-
-// }
-
-
 
 #[cfg(test)]
 mod tests{
