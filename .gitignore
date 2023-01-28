@@ -1,3 +1,4 @@
 /target/
 .env
 taigacli_session.toml
+taigacli_config.toml
