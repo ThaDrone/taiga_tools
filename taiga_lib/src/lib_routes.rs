@@ -36,7 +36,7 @@ pub trait TaigaRoute {
     /// Request method for structs implementing the `Taigaroute` trait
     /// Takes the base url (this should be fetched from a config file)
     /// TODO consider changing opt_auth_key parameter to Session
-    fn request(&self,base_url:&String, opt_auth_key:&Option<String>) -> Result<serde_json::Value, String>{
+    fn request(&self,base_url:&str, opt_auth_key:Option<&str>) -> Result<serde_json::Value, String>{
 
 
         let mut url = base_url.to_owned();
@@ -234,7 +234,7 @@ mod tests{
            auth_type:&auth                        
         };
 
-        let response_json = route.request(&BASE_URL.to_string(),&None).expect("Request failed");
+        let response_json = route.request(BASE_URL,None).expect("Request failed");
         
         let auth_key = response_json["auth_token"].as_str().unwrap().to_string();
         
@@ -242,7 +242,7 @@ mod tests{
 
         let route = UserInfoMeRequest{id:&MemberID::Me};
 
-        let response = route.request(&BASE_URL.to_string(), &Some(auth_key));
+        let response = route.request(BASE_URL, Some(&auth_key));
 
     }
 

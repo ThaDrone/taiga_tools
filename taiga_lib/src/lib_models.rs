@@ -15,7 +15,7 @@ impl User{
     fn get(auth_key:String) -> User {
 
         let route = UserInfoMeRequest{ id: &MemberID::Me};
-        let data = route.request(&BASE_URL.to_string(), &Some(auth_key)).unwrap();
+        let data = route.request(BASE_URL, Some(&auth_key)).unwrap();
         
         User {
             id: data["id"].to_string(),
@@ -50,15 +50,15 @@ pub struct Issue {
 
 impl TODOActions for Issue{
 
-    fn get(&mut self, id:String) -> Self {
+    fn get(&mut self, id:&str) -> Self {
         todo!()
     }
 
-    fn create(&mut self, auth_key:&Option<String>) -> Result<String,String> {
+    fn create(&mut self, auth_key:Option<&str>) -> Result<String,String> {
         
         let route = CreateIssue{issue:&self};
         
-        let response = route.request(&crate::BASE_URL.to_string(), &auth_key)?; //TODO key is copied here :(
+        let response = route.request(BASE_URL, auth_key).unwrap(); //TODO key is copied here :(
 
         let id = response["id"].as_str();
         let number = response["ref"].as_str();
@@ -87,9 +87,9 @@ impl TODOActions for Issue{
 pub trait TODOActions {
     // TODO implement these in the Task / Usestories / Issues
     // TODO find better name for this trait
-    fn get(&mut self, id:String) -> Self;
+    fn get(&mut self, id:&str) -> Self;
     
-    fn create(&mut self, auth_key:&Option<String>)-> Result<String, String>;
+    fn create(&mut self, auth_key:Option<&str>)-> Result<String, String>;
 
     fn update(&mut self);
 
