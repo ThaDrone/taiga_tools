@@ -35,6 +35,7 @@ pub trait TaigaRoute {
     
     /// Request method for structs implementing the `Taigaroute` trait
     /// Takes the base url (this should be fetched from a config file)
+    /// TODO consider changing opt_auth_key parameter to Session
     fn request(&self,base_url:&String, opt_auth_key:&Option<String>) -> Result<serde_json::Value, String>{
 
 
@@ -141,8 +142,8 @@ impl<'a> TaigaRoute for Authentificate<'a>{
     }
 }
 
-struct UserInfoMeRequest<'a>{
-    id:&'a MemberID<'a>,
+pub struct UserInfoMeRequest<'a>{
+    pub(crate) id:&'a MemberID<'a>,
 }
 
 pub enum MemberID<'a>{
