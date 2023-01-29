@@ -27,9 +27,9 @@ pub enum Method{
     Create,
     /// Retrieve the instance on Taiga
     Read,
-    /// Update the instane on Taiga
+    /// Update the instance on Taiga
     Update,
-    /// Delete the item on Taiga
+    /// Delete the instance on Taiga
     Delete,
 }
 #[derive(Args,Debug)]
@@ -37,13 +37,16 @@ pub struct IssueCmd{
 
     #[arg(value_enum)]
     method:Method,
-    
+   
+    /// Required for Read, Update and Delete.
     #[arg(long,required_if_eq_any([("method","read"),("method","update"),("method","delete")]), default_missing_value(None))] 
     id:Option<String>,
 
+    /// Subject of the Issue, Required when creating a new issue.
     #[arg(long, required_if_eq("method","create"),default_missing_value(None))]
     subject:Option<String>,
     
+    /// Project ID number. Required when creating a new issue.
     #[arg(long, required_if_eq("method","create"),default_missing_value(None))]
     project: Option<String>,
     
@@ -65,25 +68,30 @@ pub struct IssueCmd{
     #[arg(long, default_missing_value(None))]
     milestone: Option<String>,
     
+    /// Add or change the status of the ticket.
     #[arg(long, default_missing_value(None))]
     status: Option<String>,
 
+    /// Add or change the severity of the issue.
     #[arg(long, default_missing_value(None))]
     severity: Option<String>,
 
+    /// Add the priority of the issue.
     #[arg(long, default_missing_value(None))]
     priority: Option<String>,
 
+    /// Use type ID.
     #[arg(long, default_missing_value(None))]
     typeid: Option<String>,
 
+    /// Add any tags that should be added to the issue.
     #[arg(long, default_missing_value(None))]
     tags: Option<String>,
 
+    /// Add any watchers (not sure what datatype).
     #[arg(long, default_missing_value(None))]
     watchers: Option<String>,
 
 }
-
 
 
