@@ -38,13 +38,13 @@ pub struct IssueCmd{
     #[arg(value_enum)]
     method:Method,
     
-     #[arg(long,required_if_eq_any([("method","read"),("method","update"),("method","delete")]), default_missing_value(None))] 
+    #[arg(long,required_if_eq_any([("method","read"),("method","update"),("method","delete")]), default_missing_value(None))] 
     id:Option<String>,
 
-    #[arg(long, default_missing_value(None))]
+    #[arg(long, required_if_eq("method","create"),default_missing_value(None))]
     subject:Option<String>,
     
-    #[arg(long, default_missing_value(None))]
+    #[arg(long, required_if_eq("method","create"),default_missing_value(None))]
     project: Option<String>,
     
     #[arg(long, default_missing_value(None))]
