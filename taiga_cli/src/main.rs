@@ -26,7 +26,7 @@ pub fn main(){
 
 #[cfg(test)]
 mod tests{
-    use crate::{main, parseArgs};
+    use crate::{main};
 
     #[test]
     fn test_main(){
@@ -37,5 +37,8 @@ mod tests{
     fn test_parse_args(){
         parseArgs();
     }
-
+    
+    // Test some functionality
 }
+
+
