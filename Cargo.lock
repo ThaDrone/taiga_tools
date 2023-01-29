@@ -831,6 +831,7 @@ name = "taiga_lib"
 version = "0.1.0"
 dependencies = [
  "dotenv",
+ "lazy_static",
  "log",
  "reqwest",
  "serde_json",
