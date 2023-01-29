@@ -1,4 +1,4 @@
-use std::{collections::HashMap};
+use std::{collections::HashMap, fmt::Pointer};
 use reqwest::{header::{HeaderMap, HeaderValue}, blocking::{Client}, StatusCode, Method };
 use serde_json;
 use log::debug;
@@ -17,12 +17,12 @@ use crate::lib_models::Issue;
 pub trait TaigaRoute {
     fn url(&self) -> String;
 
-    fn headers(&self) -> HeaderMap {
-        HeaderMap::new()
+    fn headers(&self) -> Result<HeaderMap,RouteError> {
+        Ok(HeaderMap::new())
     }
 
-    fn form(&self) -> HashMap<&str, String> {
-        HashMap::new()
+    fn form(&self) -> Result<HashMap<&str, String>,RouteError>{
+        Ok(HashMap::new())
     }
 
     fn needs_authkey() -> bool{
@@ -36,19 +36,30 @@ pub trait TaigaRoute {
     /// Request method for structs implementing the `Taigaroute` trait
     /// Takes the base url (this should be fetched from a config file)
     /// TODO consider changing opt_auth_key parameter to Session
-    fn request(&self,base_url:&str, opt_auth_key:Option<&str>) -> Result<serde_json::Value, String>{
+    fn request(&self,base_url:&str, opt_auth_key:Option<&str>) -> Result<serde_json::Value, RouteError>{
 
 
         let mut url = base_url.to_owned();
         url.push_str(&self.url());
 
         // Get the headers, insert the default headers as well
-        let mut headers = self.headers();
-        headers.insert("Content-Type",HeaderValue::from_static("application/json"));
+        let mut headers = self.headers()?;
+        
+        let key = "Content-Type";
+        let val ="application/json"; 
+       
+         
+        headers.insert(key,HeaderValue::from_static(&val));
 
+        // match headers.insert(key,HeaderValue::from_static(&val)){ 
+        //     Some(_) => (),
+        //     None => return Err(RouteError::HeaderError{key: key,val:val.to_string()}),
+        // }
+
+        
         let method = self.method();
         
-        let form = self.form();
+        let form = self.form()?;
 
         // let mut builder = Client::new().request(method, &url);
         let mut builder = Client::new()
@@ -61,33 +72,39 @@ pub trait TaigaRoute {
         If it was not, it will return an error.
         We cannot pass a empty string in the bearer_auth, then the Taiga server will panic. 
         */
-        if let (Some(key), true) = (opt_auth_key, Self::needs_authkey()) { 
+        let needs_key = Self::needs_authkey();
+
+        if let (Some(key), true) = (opt_auth_key, needs_key) { 
             // Ideally this checked at the start of the function,
             // but I dont know if I can make the request builder for only the bearer auth, and later merge it into the rest. 
             builder = builder.bearer_auth(key);
             
-        }
-        
-        debug!("URL {} ", url);
+        } else if let (None, true) = (opt_auth_key, needs_key) { 
+            // If the opt_auth_key was None, but need_key is true, return a [`RouteError::NoAuthKey`]
+            return Err(RouteError::NoAuthKey);
+        };
+
+    
 
         let response = builder.send();
 
         // Check if the status is correct
         let response = match response {
             Ok(resp) =>  resp,
-            Err(e) => return Err(e.to_string()),
+            Err(e) => RouteError::Reqwest(e)
         };
 
         // Check if the status is correct
+        // If an unexpected response was given, return the code and the url.
         match response.status(){
             StatusCode::OK => (),
-            code => return Err(format!("Statuscode: {}, URL: {} ", code, url)),
+            code => return RouteError::UnexpectedResponse(code, url) ,
         };
 
         // Check if the body is correct
         let body = match response.text() {
             Ok(body) => body,
-            Err(e) => return Err(format!("Could not read the body of the response: {} ",e.to_string())),
+            Err(e) => return RouteError::BodyError(e),
         };
 
         match serde_json::from_str(&body){
@@ -116,7 +133,7 @@ impl<'a> TaigaRoute for Authentificate<'a>{
         String::from("/api/v1/auth")
     }
 
-    fn form(&self) -> HashMap<&str, String> {
+    fn form(&self) -> Result<HashMap<&str, String>,RouteError> {
         
         let mut form: HashMap<&str, String> = HashMap::new();
 
@@ -130,7 +147,7 @@ impl<'a> TaigaRoute for Authentificate<'a>{
             AuthType::GithubToken(_) => todo!(),        
         };
 
-        form
+        Ok(form)
     }
 
     fn needs_authkey() -> bool {
@@ -178,8 +195,10 @@ impl<'a> TaigaRoute for CreateIssue<'a> {
         String::from("/api/v1/issues")
     }
 
-    fn form(&self) -> HashMap<&str, String> {
+    fn form(&self) -> Result<HashMap<&str, String>, RouteError>{
         let mut form: HashMap<&str, String>  = HashMap::new();
+
+
 
         // TODO check if this can be more efficient with borrows. Might get really messy though
         form.insert("subject",self.issue.subject.to_owned());
@@ -206,85 +225,43 @@ impl<'a> TaigaRoute for CreateIssue<'a> {
     // TODO implement Error in Request Error
   
 }
-enum RequestError{
-    Reqwest(reqwest::Error),
+
+#[derive(Debug)]
+enum RouteError{
+
+
+    // Errors relating to building the request
     NoAuthKey,
+    AuthentificationError,
+    MissingField(String),
+
+    HeaderError{key:&str,val:String},
+
+
+
+    // Errors relating to the response
+    UnexpectedResponse{code:String, url:String},
+    Reqwest(reqwest::Error),
+    BodyError(),
 }
 
+impl std::error::Error for RouteError{}
+
+impl std::fmt::Display for RouteError{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RouteError::Reqwest(e) => write!{f,"Reqwest error {}",e}, 
+            RouteError::MissingField(field) => write!(f,"Missing Field: {}",field ),
+            RouteError::NoAuthKey => write!(f,"Missing Authkey!"),
+        }
+    }
+}
 
 
 
 
 #[cfg(test)]
 mod tests{
-
-    
-    use std::default;
-
-    use lazy_static::lazy_static;
-    use crate::{lib_routes::*, BASE_URL};
-
-
-    lazy_static!{
-    /// Lazy static macro that will fetch the TestData needed in the functions at runtime. 
-    /// This prevents that for every test, the .env file is not loaded over and over again, and more importantly 
-    /// that the Authentification function is not run every time, causing a potential timeout.
-        static ref env_data:TestData = TestData::get(); 
-    }
-
-    /// Container to hold data of the .env file. 
-    struct TestData{
-        base_url:String,
-        auth_key:String,
-        project_id:String,
-    }
-
-
-    impl TestData{
-        /// Get the the data from the .env file. The env file should be in TOML format and contain the following data:
-        /// `taiga_project_id` = project_id of a project to be used for testing.
-        /// `taiga_username` = taiga username you want to use to run the test.
-        /// `taiga_password` = the password of the account to be used in the test.
-        /// `taiga_base_url` = base url where your taiga projects are on. For example: "https://api.taiga.io"
-        fn get() -> TestData{
-
-            let project_id =  std::env::var("taiga_project_id").expect("ProjectID not found");
-            let base_url =  std::env::var("taiga_base_url").expect("ProjectID not found");
-
-
-            let auth = AuthType::Taiga { 
-                username: std::env::var("taiga_username").expect("Username not found"), 
-                password: std::env::var("taiga_password").expect("Password not found")};
-
-            let route = Authentificate{
-            auth_type:&auth                        
-            };
-            // Make request for the Authkeys
-            let response_json = route.request(&base_url,None).expect("Request failed");
-            
-            let auth_key = response_json["auth_token"].as_str().unwrap().to_string();
-            
-            TestData { base_url, auth_key, project_id}
-            }
-    }
-
-
-
-
-    // Integration testing )()
-    #[test]
-    fn test_issues(){
-
-        // Test the CRUD operations:
-
-        let project;
-        let subject;
-        let description;
-
-        let issue = Issue{subject,description,project, ..Default::default()};
-
-
-    }
 
 
 }
