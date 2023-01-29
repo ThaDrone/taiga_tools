@@ -1,7 +1,4 @@
 use crate::{lib_routes::{CreateIssue, TaigaRoute, UserInfoMeRequest, MemberID}, BASE_URL};
-
-
-
 /// Taiga "ORM". 
 /// Use this library to interact with taiga.
 /// The models use the [`lib_routes`].

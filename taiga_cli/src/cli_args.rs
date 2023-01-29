@@ -1,102 +1,89 @@
 use clap::{
     Args,
-    Parser,
+    Parser, Subcommand,
 };
 
-
+// TODO #7 Create a macro that compares two structs, and checks wether the structs implement the same values
 
 #[derive(Parser)]
-pub struct CliArgs{
+pub struct MainArgs{
+    
+    /// Select which type of object you want to use
     #[clap(subcommand)]
-    command:Arguments
+    objecttype:ObjectTypes,
 }
 
-
-#[derive(Parser)]
-#[clap(author,version,about)]
-pub enum Arguments{
-    // Create an Issue on Taiga
-    CreateIssue(CreateIssue),
-
-    // / Retrieve an Issue from Taiga
-    // GetIssue(GetIssue),
-    // /// Update an issue on taiga
-    // UpdateIssue(UpdateIssue),
-   
-    // /// Create a Task on Taiga
-    // CreateTask(CreateTask),
-    // /// Retrieve a Task from Taiga
-    // GetTask(GetTask),
-    // /// Update a Task on Taiga
-    // UpdateTask(UpdateTask),
-    
-    // /// Create a UserStory on Taiga
-    // CreateStory(CreateStory),
-    // /// Retrieve a UserStory from Taiga
-    // GetStory(GetStory),
-    // /// Update a UserStory on Taiga
-    // UpdateStory(UpdateStory),
-    
-    // /// Create a Epic on Taiga
-    // CreateEpic(CreateEpic),
-    // /// Retrieve a Epic from Taiga
-    // GetEpic(GetEpic),
-    // /// Update a Epic on Taiga
-    // UpdateEpic(UpdateEpic),
-
-    // IssueStatus
-    
+#[derive(Debug,Subcommand)]
+pub enum ObjectTypes{
+    Issue(IssueCmd),
+    // Task(TaskCmd),
+    // UserStory(UserCmd),
+    // Epic(EpicCmd),
 }
 
+#[derive(Debug,clap::ValueEnum, Clone)]
+pub enum Method{
+    /// Create a new instance on Taiga
+    Create,
+    /// Retrieve the instance on Taiga
+    Read,
+    /// Update the instane on Taiga
+    Update,
+    /// Delete the item on Taiga
+    Delete,
+}
 #[derive(Args,Debug)]
-pub struct CreateIssue{
+pub struct IssueCmd{
 
-
-    #[arg(long)]
-    subject:String,
+    #[arg(value_enum)]
+    method:Method,
     
-    #[arg(long)]
-    project: String,
+     #[arg(long,required_if_eq_any([("method","read"),("method","update"),("method","delete")]), default_missing_value(None))] 
+    id:Option<String>,
+
+    #[arg(long, default_missing_value(None))]
+    subject:Option<String>,
     
-    #[arg(long, default_value_t = String::from(""))]
-    description: String,
+    #[arg(long, default_missing_value(None))]
+    project: Option<String>,
     
-    #[arg(long, default_value_t = String::from(""))]
-    assigned_to: String,
-
-    #[arg(long, default_value_t = String::from(""))]
-    blocked_note: String,
-
-    #[arg(long, default_value_t = String::from(""))]
-    is_blocked: String,
-
-    #[arg(long, default_value_t = String::from(""))]
-    is_closed: String,
-
-    #[arg(long, default_value_t = String::from(""))]
-    milestone: String,
+    #[arg(long, default_missing_value(None))]
+    description: Option<String>,
     
-    #[arg(long, default_value_t = String::from(""))]
-    status: String,
+    #[arg(long, default_missing_value(None))]
+    assigned_to: Option<String>,
 
-    #[arg(long, default_value_t = String::from(""))]
-    severity: String,
+    #[arg(long, default_missing_value(None))]
+    blocked_note: Option<String>,
 
-    #[arg(long, default_value_t = String::from(""))]
-    priority: String,
+    #[arg(long, default_missing_value(None))]
+    is_blocked: Option<String>,
 
-    #[arg(long, default_value_t = String::from(""))]
-    typeid: String,
+    #[arg(long, default_missing_value(None))]
+    is_closed: Option<String>,
 
-    #[arg(long, default_value_t = String::from(""))]
-    tags: String,
+    #[arg(long, default_missing_value(None))]
+    milestone: Option<String>,
+    
+    #[arg(long, default_missing_value(None))]
+    status: Option<String>,
 
-    #[arg(long, default_value_t = String::from(""))]
-    watchers: String,
+    #[arg(long, default_missing_value(None))]
+    severity: Option<String>,
+
+    #[arg(long, default_missing_value(None))]
+    priority: Option<String>,
+
+    #[arg(long, default_missing_value(None))]
+    typeid: Option<String>,
+
+    #[arg(long, default_missing_value(None))]
+    tags: Option<String>,
+
+    #[arg(long, default_missing_value(None))]
+    watchers: Option<String>,
 
 }
-
-
 
 
 

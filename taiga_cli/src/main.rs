@@ -21,7 +21,7 @@ pub fn main(){
 
 pub fn parseArgs(){
 
-    let args = cli_args::CliArgs::parse();
+    let args = cli_args::MainArgs::parse();
 
     // println!("Args: {}", );
 }
