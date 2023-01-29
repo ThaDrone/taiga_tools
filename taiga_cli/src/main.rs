@@ -3,6 +3,7 @@ mod cli_storage;
 mod cli_args;
 
 use clap::Parser;
+use cli_args::{MainArgs, ObjectTypes};
 use log::debug;
 
 const BASE_URL:&str = "https://api.taiga.io";
@@ -15,16 +16,13 @@ pub fn main(){
     let session = session.expect("Could not obtain session!");
     let config = config.expect("Could not load config!");
 
-    parseArgs();
-
+    
+    let mut commands = MainArgs::parse();
+    commands.execute(session, config) 
 }
 
-pub fn parseArgs(){
 
-    let args = cli_args::MainArgs::parse();
 
-    // println!("Args: {}", );
-}
 
 #[cfg(test)]
 mod tests{
