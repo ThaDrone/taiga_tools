@@ -18,7 +18,7 @@ pub struct MainArgs{
 impl MainArgs{
     pub fn execute(&mut self, session:Session, config:Config){
 
-        match self.objecttype {
+        match &self.objecttype {
             ObjectTypes::Issue(command) => command.run(session,config),
         }
     }
@@ -138,3 +138,13 @@ impl IssueCmd{
 }
 
 
+#[cfg(tests)]
+mod tests{
+
+    #[test]
+    fn test_issue(){
+
+        
+    }
+
+}
