@@ -29,8 +29,8 @@ pub struct Task{
 pub struct Issue {
     pub id: Option<String>,
     pub number: Option<String>,
-    pub subject: String,
-    pub project: String,
+    pub subject: Option<String>,
+    pub project: Option<String>,
     pub description: Option<String>,
     pub assigned_to: Option<String>,
     pub blocked_note: Option<String>,
@@ -43,6 +43,12 @@ pub struct Issue {
     pub typeid: Option<String>,
     pub tags: Option<String>,
     pub watchers: Option<Vec<String>>,
+}
+
+impl Default for Issue{
+    fn default() -> Self {
+        Self { id: None, number: None, subject: None, project: None, description: None, assigned_to: None, blocked_note: None, is_blocked: None, is_closed: None, milestone: None, status: None, severity: None, priority: None, typeid: None, tags: Default::default(), watchers: Default::default() }
+    }
 }
 
 impl TODOActions for Issue{
@@ -128,6 +134,35 @@ impl ProjectStructure{
     }
 
     fn get_info(){
+
+    }
+
+}
+
+
+mod tests{
+    
+    // contains ENV data
+    use crate::lib_test_utils as utils;
+
+    use super::{Issue, TODOActions};
+
+
+    // Integration testing )()
+    #[test]
+    fn test_issues(){
+
+        // Test the CRUD operations:
+        let project = Some(utils::env_data.project_id.to_string());
+        let subject = Some(String::from("Test"));
+        let description = Some("Test Description!".to_string());
+
+        let issue = Issue{subject,description,project, ..Issue::default()};
+
+        let auth_key:Option<&str> = Some(&utils::env_data.auth_key);
+
+        issue.create(auth_key);
+
 
     }
 
