@@ -1,11 +1,10 @@
 pub mod lib_routes;
 pub mod lib_models;
-
+pub mod lib_test_utils;
 
 
 // TODO Make this an ENV or Config
 const BASE_URL:&str = "https://api.taiga.io";
-
 
 #[cfg(test)]
 mod tests{
@@ -34,30 +33,15 @@ mod tests{
         println!("Authentificated");
             
         let mut issue = Issue{
-            id: None,
-            number:None, 
-            subject: String::from("Test!"),
-            project: std::env::var("taiga_project_id").expect("No project found in .env"),
+            subject: Some(String::from("Test!")),
+            project: Some(std::env::var("taiga_project_id").expect("No project found in .env")),
             description:Some(String::from("TEST")),
-            assigned_to: None,
-            blocked_note: None,
-            is_blocked: None,
-            is_closed: None,
-            milestone: None,
-            status: None,
-            severity: None,
-            priority: None,
-            typeid: None,
-            tags: None,
-            watchers: None,
+            ..Issue::default()
         };
 
         let response = issue.create(auth_key);
 
         println!("Created my issue! {}", response.unwrap_err())
 
-        
-        
-         
     }
 }
