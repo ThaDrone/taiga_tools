@@ -1,4 +1,4 @@
-use crate::{lib_routes::{CreateIssue, TaigaRoute, UserInfoMeRequest, MemberID}, BASE_URL};
+use crate::{lib_routes::{CreateIssue, TaigaRoute, GetUserInfo, MemberID}, BASE_URL};
 /// Taiga "ORM". 
 /// Use this library to interact with taiga.
 /// The models use the [`lib_routes`].
@@ -10,9 +10,9 @@ pub struct User{
 
 impl User{
     fn get(auth_key:String) -> User {
-
-        let route = UserInfoMeRequest{ id: &MemberID::Me};
-        let data = route.request(BASE_URL, Some(&auth_key)).unwrap();
+    
+        let route = GetUserInfo{ id: &MemberID::Me};
+        let data = route.request(BASE_URL, &Some(auth_key)).unwrap();
         
         User {
             id: data["id"].to_string(),
@@ -41,7 +41,7 @@ pub struct Issue {
     pub severity: Option<String>,
     pub priority: Option<String>,
     pub typeid: Option<String>,
-    pub tags: Option<String>,
+    pub tags: Option<Vec<String>>,
     pub watchers: Option<Vec<String>>,
 }
 
@@ -57,7 +57,7 @@ impl TODOActions for Issue{
         todo!()
     }
 
-    fn create(&mut self, auth_key:Option<&str>) -> Result<String,String> {
+    fn create(&mut self, auth_key:&Option<String>) -> Result<String,String> {
         
         let route = CreateIssue{issue:&self};
         
@@ -68,7 +68,7 @@ impl TODOActions for Issue{
         
         if let Some(id) = id{
            self.id = Some(id.to_owned());
-        }
+        }         
         
         if let Some(number) = number{
            self.number = Some(number.to_owned());
@@ -92,7 +92,7 @@ pub trait TODOActions {
     // TODO find better name for this trait
     fn get(&mut self, id:&str) -> Self;
     
-    fn create(&mut self, auth_key:Option<&str>)-> Result<String, String>;
+    fn create(&mut self, auth_key:&Option<String>)-> Result<String, String>;
 
     fn update(&mut self);
 
@@ -154,14 +154,18 @@ mod tests{
 
         // Test the CRUD operations:
         let project = Some(utils::env_data.project_id.to_string());
-        let subject = Some(String::from("Test"));
+        let subject = Some(format!("test_issue {:?}", chrono::Utc::now()));
         let description = Some("Test Description!".to_string());
 
-        let issue = Issue{subject,description,project, ..Issue::default()};
+        let mut issue = Issue{subject,description,project, ..Issue::default()};
 
-        let auth_key:Option<&str> = Some(&utils::env_data.auth_key);
+        let auth_key:Option<String> = Some(utils::env_data.auth_key.to_string());
 
-        issue.create(auth_key);
+        println!("\n##\n## Authkey in test {} ",auth_key.to_owned().unwrap());
+
+        issue.create(&auth_key);
+
+        //  TODO add test to read and delete
 
 
     }
