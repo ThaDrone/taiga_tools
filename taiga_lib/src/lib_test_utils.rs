@@ -27,22 +27,28 @@ impl TestData{
     /// `taiga_base_url` = base url where your taiga projects are on. For example: "https://api.taiga.io"
     fn get() -> TestData{
 
-        let project_id =  std::env::var("taiga_project_id").expect("ProjectID not found");
-        let base_url =  std::env::var("taiga_base_url").expect("ProjectID not found");
+        use dotenv::dotenv;
+        dotenv().ok();
+
+        let project_id =  std::env::var("taiga_project_id").expect("taiga_project_id not found");
+        let base_url =  std::env::var("taiga_base_url").expect("taiga_base_url not found");
 
 
         let auth = AuthType::Taiga { 
-            username: std::env::var("taiga_username").expect("Username not found"), 
-            password: std::env::var("taiga_password").expect("Password not found")};
+            username: std::env::var("taiga_username").expect("taiga_username not found"), 
+            password: std::env::var("taiga_password").expect("taiga_password not found")};
 
         let route = Authentificate{
         auth_type:&auth                        
         };
         // Make request for the Authkeys
-        let response_json = route.request(&base_url,None).expect("Request failed");
+        let response_json = route.request(&base_url,&None).expect("Request failed");
         
         let auth_key = response_json["auth_token"].as_str().unwrap().to_string();
         
+        println!("Succesfully authentificated for testing: {}",auth_key);
         TestData { base_url, auth_key, project_id}
+
+        
         }
 }
