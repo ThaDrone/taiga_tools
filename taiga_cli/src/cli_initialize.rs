@@ -1,7 +1,7 @@
 use std::io::{Write, self};
 
 use rpassword::read_password;
-use taiga_lib::lib_routes::{self, TaigaRoute};
+use taiga_lib::lib_routes::{self, TaigaRoute, RouteError,MemberID};
 
 use crate::{cli_storage::{Session, Config, LocalStorage}, BASE_URL};
 
@@ -12,15 +12,6 @@ If they are not present, it will go trough a "wizard" where the login is asked a
 */
 pub(crate) fn initialize() -> (Option<Session>, Option<Config>){
 
-    // Try to load the session config file, if not found, login.
-    let mut session = match  Session::load(){
-        Ok(session) => session,
-        Err(e) => {
-            println!("{e}");
-            login()
-        }
-    };
-
     // Try to load the config file with preferences, if not available, create one. 
     let config = match Config::load(){
         Ok(config) => config,
@@ -30,10 +21,41 @@ pub(crate) fn initialize() -> (Option<Session>, Option<Config>){
         },
     };
 
+    // Try to load the session config file, if not found, login.
+    let mut session = match  Session::load(){
+        Ok(session) => check_session(session, &config),
+        Err(e) => {
+            println!("{e}");
+            login()
+        }
+    };
 
     (Some(session),Some(config)) 
 }
 
+/// Makes a request using the session and the config. 
+/// If the request fails, login again.
+/// Return either the original [`Session`], or the one created by the fuction [`login()`]
+fn check_session(session:Session,config:&Config) -> Session{
+
+    // Make a dummy request.
+    let response = lib_routes::GetUserInfo{id:&MemberID::Me};
+
+    let status = response.request(&config.base_url,&Some(session.auth_key.to_string()));
+
+    // Check if the  request was ok. If not, login.
+    return if let Err(e)= status {
+        
+        // When there is a auth related issue, prompt the user to login.
+        // If not, panic and print out the reason.
+        match e {
+            RouteError::NoAuthKey | RouteError::AuthentificationError => login(),
+            e => panic!("Something unexpected went wrong making the test request {}", e)
+        }
+    } else {
+        session
+    }
+}
 /// This function will prompt the user to login. 
 fn login() -> Session{
 
@@ -67,7 +89,7 @@ fn login() -> Session{
 
     // Running the route
     // TODO handle this properly
-    let data = route.request(BASE_URL, None).expect("Could not login: ");
+    let data = route.request(BASE_URL, &None).expect("Could not login: ");
 
     let auth_key = data["auth_key"].to_string();
 
