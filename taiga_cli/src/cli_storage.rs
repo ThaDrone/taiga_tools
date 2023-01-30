@@ -40,8 +40,8 @@ pub struct Session {
 
 #[derive(Serialize, Deserialize)]
 pub struct Config {
-        base_url:String,
-        project_id: String,
+        pub base_url:String,
+        pub project_id: String,
     }
 
 impl LocalStorage for Session {
