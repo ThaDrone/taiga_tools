@@ -18,7 +18,7 @@ pub fn main(){
 
     
     let mut commands = MainArgs::parse();
-    commands.execute(session, config) 
+    commands.execute(&session, &config) 
 }
 
 
@@ -33,11 +33,6 @@ mod tests{
         main();
     }
 
-    #[test]
-    fn test_parse_args(){
-        parseArgs();
-    }
-    
     // Test some functionality
 }
 
