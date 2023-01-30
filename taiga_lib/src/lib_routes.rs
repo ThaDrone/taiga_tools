@@ -36,7 +36,7 @@ pub trait TaigaRoute {
     /// Request method for structs implementing the `Taigaroute` trait
     /// Takes the base url (this should be fetched from a config file)
     /// TODO consider changing opt_auth_key parameter to Session
-    fn request(&self,base_url:&str, opt_auth_key:Option<&str>) -> Result<serde_json::Value, RouteError>{
+    fn request(&self,base_url:&str, opt_auth_key:&Option<String>) -> Result<serde_json::Value, RouteError>{
 
 
         let mut url = base_url.to_owned();
@@ -78,6 +78,7 @@ pub trait TaigaRoute {
             // Ideally this checked at the start of the function,
             // but I dont know if I can make the request builder for only the bearer auth, and later merge it into the rest. 
             builder = builder.bearer_auth(key);
+            println!("####\n\n##### Auth required! {}", key)
             
         } else if let (None, true) = (opt_auth_key, needs_key) { 
             // If the opt_auth_key was None, but need_key is true, return a [`RouteError::NoAuthKey`]
@@ -91,25 +92,32 @@ pub trait TaigaRoute {
         // Check if the status is correct
         let response = match response {
             Ok(resp) =>  resp,
-            Err(e) => RouteError::Reqwest(e)
+            Err(e) => return Err(RouteError::Reqwest(e))
         };
 
         // Check if the status is correct
         // If an unexpected response was given, return the code and the url.
         match response.status(){
+            
+            //OK codes:
             StatusCode::OK => (),
-            code => return RouteError::UnexpectedResponse(code, url) ,
+            StatusCode::ACCEPTED => (),
+            StatusCode::CREATED => (),
+            
+            // Not OK  
+            // StatusCode::UNAUTHORIZED => return Err(RouteError::AuthentificationError),
+            code => return Err(RouteError::UnexpectedResponse{code, url}) ,
         };
 
         // Check if the body is correct
         let body = match response.text() {
             Ok(body) => body,
-            Err(e) => return RouteError::BodyError(e),
+            Err(_) => return Err(RouteError::BodyError),
         };
 
         match serde_json::from_str(&body){
             Ok(json) => Ok(json),
-            Err(e) => Err(format!("Could not convert the response to JSON: {}",e.to_string())),
+            Err(e) => Err(RouteError::SerError(e)),
         }
 
 
@@ -159,8 +167,8 @@ impl<'a> TaigaRoute for Authentificate<'a>{
     }
 }
 
-pub struct UserInfoMeRequest<'a>{
-    pub(crate) id:&'a MemberID<'a>,
+pub struct GetUserInfo<'a>{
+    pub id:&'a MemberID<'a>,
 }
 
 pub enum MemberID<'a>{
@@ -168,14 +176,14 @@ pub enum MemberID<'a>{
     ID(&'a String)
 }
 
-impl<'a> TaigaRoute for UserInfoMeRequest<'a>{
+impl<'a> TaigaRoute for GetUserInfo<'a>{
     
     
     fn url(&self) -> String {   
         
-        let url = String::from("api/v1/users/{id}");
+        let url = String::from("/api/v1/users/{id}");
 
-        match self.id {
+        let url = match self.id {
             MemberID::ID(id) => url.replace("{id}", &id),
             MemberID::Me => url.replace("{id}", &"me"),
         };
@@ -198,11 +206,17 @@ impl<'a> TaigaRoute for CreateIssue<'a> {
     fn form(&self) -> Result<HashMap<&str, String>, RouteError>{
         let mut form: HashMap<&str, String>  = HashMap::new();
 
-
-
         // TODO check if this can be more efficient with borrows. Might get really messy though
-        form.insert("subject",self.issue.subject.to_owned());
-        form.insert("project", self.issue.project.to_owned());
+
+        // Check if the required fields are given.
+        if let None = self.issue.subject {
+            return Err(RouteError::MissingField("subject".to_owned()))
+        } else if let None = self.issue.project {
+            return Err(RouteError::MissingField("project".to_owned()))
+        }
+
+        self.issue.subject.to_owned().and_then(|v| {form.insert("subject",v)});
+        self.issue.project.to_owned().and_then(|v| {form.insert("project",v)});
 
         self.issue.assigned_to.to_owned().and_then(|v| {form.insert("assigned_to",v)});
         self.issue.blocked_note.to_owned().and_then(|v| {form.insert("blocked_note",v)});
@@ -214,20 +228,30 @@ impl<'a> TaigaRoute for CreateIssue<'a> {
         self.issue.severity.to_owned().and_then(|v| {form.insert("severity",v)});
         self.issue.priority.to_owned().and_then(|v| {form.insert("priority",v)});
         self.issue.typeid.to_owned().and_then(|v| {form.insert("type",v)});
-        self.issue.tags.to_owned().and_then(|v| {form.insert("tags",v)});
 
-        form
+
+        self.issue.tags.to_owned().and_then(|v| {form.insert("tags",v.join(","))});
+
+        Ok(form)
     }
 
     fn method(&self) -> Method{
         Method::POST
     }
-    // TODO implement Error in Request Error
+
+    fn headers(&self) -> Result<HeaderMap,RouteError> {
+        Ok(HeaderMap::new())
+    }
+
+    fn needs_authkey() -> bool{
+        true
+    }
+
   
 }
 
 #[derive(Debug)]
-enum RouteError{
+pub enum RouteError{
 
 
     // Errors relating to building the request
@@ -235,14 +259,15 @@ enum RouteError{
     AuthentificationError,
     MissingField(String),
 
-    HeaderError{key:&str,val:String},
-
-
+    HeaderError{key:String,val:String},
 
     // Errors relating to the response
-    UnexpectedResponse{code:String, url:String},
+    UnexpectedResponse{code:StatusCode, url:String},
     Reqwest(reqwest::Error),
-    BodyError(),
+    BodyError,
+
+    // Serde Errors
+    SerError(serde_json::Error),
 }
 
 impl std::error::Error for RouteError{}
@@ -253,15 +278,34 @@ impl std::fmt::Display for RouteError{
             RouteError::Reqwest(e) => write!{f,"Reqwest error {}",e}, 
             RouteError::MissingField(field) => write!(f,"Missing Field: {}",field ),
             RouteError::NoAuthKey => write!(f,"Missing Authkey!"),
+            RouteError::AuthentificationError => write!(f,"Authentification Error!"),
+            RouteError::HeaderError { key, val } => write!(f,"Error adding a heading. \nKey: {}\nVal:{}",key,val),
+            RouteError::UnexpectedResponse { code, url } => write!(f,"Api responded unexpected. \nCode: {}\nUrl:{}",code,url),
+            RouteError::BodyError => write!(f,"Could not read the body of the response."),
+            RouteError::SerError(e) => write!(f,"Error serializing to serde_json: {}",e),
         }
     }
 }
 
 
-
-
 #[cfg(test)]
 mod tests{
+    use super::MemberID;
 
+
+    #[test]
+    fn test(){
+
+        let id = MemberID::Me;
+        
+        let url = String::from("api/v1/users/{id}");
+
+        let url = match id{
+            MemberID::ID(id) => url.replace("{id}", &id),
+            MemberID::Me => url.replace("{id}", &"me"),
+        };
+
+        println!("{url}");
+    }
 
 }
