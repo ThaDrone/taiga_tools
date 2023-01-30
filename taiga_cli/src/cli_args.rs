@@ -2,6 +2,7 @@ use clap::{
     Args,
     Parser, Subcommand,
 };
+use taiga_lib::lib_models::{Issue, TODOActions};
 
 use crate::cli_storage::{Session, Config};
 
@@ -16,10 +17,11 @@ pub struct MainArgs{
 }
 
 impl MainArgs{
-    pub fn execute(&mut self, session:Session, config:Config){
+    pub fn execute(&mut self, session:&Session, config:&Config){
+
 
         match &self.objecttype {
-            ObjectTypes::Issue(command) => command.run(session,config),
+            ObjectTypes::Issue(command) => command.run(&session,&config),
         }
     }
 }
@@ -59,9 +61,9 @@ pub struct IssueCmd{
     #[arg(long, required_if_eq("method","create"),default_missing_value(None))]
     subject:Option<String>,
     
-    /// Project ID number. Required when creating a new issue.
-    #[arg(long, required_if_eq("method","create"),default_missing_value(None))]
-    project: Option<String>,
+    // /// Project ID number. Required when creating a new issue.
+    // #[arg(long, required_if_eq("method","create"),default_missing_value(None))]
+    // project: Option<String>,
     
     #[arg(long, default_missing_value(None))]
     description: Option<String>,
@@ -73,10 +75,10 @@ pub struct IssueCmd{
     blocked_note: Option<String>,
 
     #[arg(long, default_missing_value(None))]
-    is_blocked: Option<String>,
+    is_blocked: Option<bool>,
 
     #[arg(long, default_missing_value(None))]
-    is_closed: Option<String>,
+    is_closed: Option<bool>,
 
     #[arg(long, default_missing_value(None))]
     milestone: Option<String>,
@@ -99,19 +101,19 @@ pub struct IssueCmd{
 
     /// Add any tags that should be added to the issue.
     #[arg(long, default_missing_value(None))]
-    tags: Option<String>,
+    tags: Option<Vec<String>>,
 
     /// Add any watchers (not sure what datatype).
     #[arg(long, default_missing_value(None))]
-    watchers: Option<String>,
+    watchers: Option<Vec<String>>,
 
 }
 
 impl IssueCmd{
-    pub fn run(&self, session:Session, config:Config){
+    pub fn run(&self, session:&Session, config:&Config){
 
         match self.method{
-            Method::Create => todo!(),
+            Method::Create => self.create(session,config).unwrap(),
             Method::Read => todo!(),
             Method::Update => todo!(),
             Method::Delete => todo!(),
@@ -120,8 +122,32 @@ impl IssueCmd{
     }
     // TODO #9 Can this be generalized? Try to dump the IssueCMD struct into the real "Issue" model struct?
     // TODO #8 Use traits in the crud operations for the Arguments
-    fn create(){
-        todo!()
+    fn create(&self, session:&Session, config:&Config) -> Result<(),()>{
+        
+        // TODO #10 Some borrowing shenanigangs going on. Having to copy all values instead of using references.
+        let mut issue = Issue{
+            subject: self.subject.to_owned(),
+            project: Some(config.project_id.to_owned()),
+            description: self.description.to_owned(),
+            assigned_to: self.assigned_to.to_owned(),
+            blocked_note: self.blocked_note.to_owned(),
+            is_blocked: self.is_blocked.to_owned(),
+            is_closed: self.is_closed.to_owned(),
+            milestone: self.milestone.to_owned(),
+            status: self.status.to_owned(),
+            severity: self.severity.to_owned(),
+            priority: self.priority.to_owned(),
+            typeid: self.typeid.to_owned(),
+            tags: self.tags.to_owned(),
+            watchers: self.watchers.to_owned(),
+            id: None,
+            number:None,
+        };
+
+        issue.create(&Some(session.auth_key.to_owned()));
+        
+        Ok(())
+
     }
 
     fn read(){
