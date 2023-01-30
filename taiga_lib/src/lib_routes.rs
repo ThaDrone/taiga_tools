@@ -78,7 +78,6 @@ pub trait TaigaRoute {
             // Ideally this checked at the start of the function,
             // but I dont know if I can make the request builder for only the bearer auth, and later merge it into the rest. 
             builder = builder.bearer_auth(key);
-            println!("####\n\n##### Auth required! {}", key)
             
         } else if let (None, true) = (opt_auth_key, needs_key) { 
             // If the opt_auth_key was None, but need_key is true, return a [`RouteError::NoAuthKey`]
