@@ -26,9 +26,9 @@ mod tests{
            auth_type:&auth                        
         };
 
-        let response_json = route.request(BASE_URL,None).expect("Request failed");
+        let response_json = route.request(BASE_URL,&None).expect("Request failed");
         
-        let auth_key:Option<&str>= Some(response_json["auth_token"].as_str().unwrap()); // TODO unwrap!
+        let auth_key:Option<String>= Some(response_json["auth_token"].as_str().unwrap().to_owned()); // TODO unwrap!
 
         println!("Authentificated");
             
@@ -39,7 +39,7 @@ mod tests{
             ..Issue::default()
         };
 
-        let response = issue.create(auth_key);
+        let response = issue.create(&auth_key);
 
         println!("Created my issue! {}", response.unwrap_err())
 
