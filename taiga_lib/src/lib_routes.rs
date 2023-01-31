@@ -44,23 +44,20 @@ pub trait TaigaRoute {
 
         // Get the headers, insert the default headers as well
         let mut headers = self.headers()?;
-        
+       
+
         let key = "Content-Type";
         let val ="application/json"; 
        
          
         headers.insert(key,HeaderValue::from_static(&val));
 
-        // match headers.insert(key,HeaderValue::from_static(&val)){ 
-        //     Some(_) => (),
-        //     None => return Err(RouteError::HeaderError{key: key,val:val.to_string()}),
-        // }
-
-        
+           
         let method = self.method();
         
         let form = self.form()?;
 
+        println!("Form: {:?}",form);
         // let mut builder = Client::new().request(method, &url);
         let mut builder = Client::new()
             .request(method, &url)
@@ -229,7 +226,7 @@ impl<'a> TaigaRoute for CreateIssue<'a> {
         self.issue.typeid.to_owned().and_then(|v| {form.insert("type",v)});
 
 
-        self.issue.tags.to_owned().and_then(|v| {form.insert("tags",v.join(","))});
+        self.issue.tags.to_owned().and_then(|v| {form.insert("tags",format!("[\"{}\"]", v.join("\",\"")))});
 
         Ok(form)
     }
@@ -267,6 +264,10 @@ pub enum RouteError{
 
     // Serde Errors
     SerError(serde_json::Error),
+
+    // Other errors, should usually not happen. 
+    // Should contain a descriptive description in the String
+    Other(String),
 }
 
 impl std::error::Error for RouteError{}
@@ -282,6 +283,7 @@ impl std::fmt::Display for RouteError{
             RouteError::UnexpectedResponse { code, url } => write!(f,"Api responded unexpected. \nCode: {}\nUrl:{}",code,url),
             RouteError::BodyError => write!(f,"Could not read the body of the response."),
             RouteError::SerError(e) => write!(f,"Error serializing to serde_json: {}",e),
+            RouteError::Other(msg) => write!(f,"Misc Error: {}",msg),
         }
     }
 }
