@@ -35,7 +35,7 @@ impl fmt::Display for Error{
 
 #[derive(Serialize, Deserialize)]
 pub struct Session {
-    pub auth_key: String,
+    pub auth_token: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -65,15 +65,19 @@ pub trait LocalStorage {
     /// Generic formula to save the data inside the struct to a file. 
     fn save(&self) -> Result<(),Error> where Self: Serialize{
 
-        let toml_str = match to_string(self) {
+
+        
+        let toml_str = match to_string(&self) {
             Ok(data) => data,
             Err(err) => return Err(Error::TomlSerError(err)),
         };
-        
+
+        println!("Data to be saved: {}",toml_str);
+
         let file_location = Self::file_location();
-        match fs::write(file_location, toml_str) {
-            Ok(data) => data,
-            Err(err) => return Err(Error::IOerror(err)),
+
+        if let Err(err) = fs::write(file_location, toml_str) {
+            return Err(Error::IOerror(err))
         };
 
         Ok(())
@@ -109,12 +113,12 @@ mod tests{
     fn test_sesssion(){
             println!("Helloworld!");
 
-            let session = Session{auth_key: "1234".to_owned()};
-            session.save();
+            let session = Session{auth_token: "1234".to_owned()};
+            session.save().unwrap();
 
             let new_session = Session::load().unwrap();
 
-            println!("Read the authkey: {}", &new_session.auth_key);
+            println!("Read the authkey: {}", &new_session.auth_token);
         }
 
     }

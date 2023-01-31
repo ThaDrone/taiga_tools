@@ -22,11 +22,11 @@ pub(crate) fn initialize() -> (Option<Session>, Option<Config>){
     };
 
     // Try to load the session config file, if not found, login.
-    let mut session = match  Session::load(){
+    let session = match  Session::load(){
         Ok(session) => check_session(session, &config),
         Err(e) => {
             println!("{e}");
-            login()
+            login().expect("could not login")
         }
     };
 
@@ -41,23 +41,17 @@ fn check_session(session:Session,config:&Config) -> Session{
     // Make a dummy request.
     let response = lib_routes::GetUserInfo{id:&MemberID::Me};
 
-    let status = response.request(&config.base_url,&Some(session.auth_key.to_string()));
+    let status = response.request(&config.base_url,&Some(session.auth_token.to_string()));
 
     // Check if the  request was ok. If not, login.
-    return if let Err(e)= status {
-        
-        // When there is a auth related issue, prompt the user to login.
-        // If not, panic and print out the reason.
-        match e {
-            RouteError::NoAuthKey | RouteError::AuthentificationError => login(),
-            e => panic!("Something unexpected went wrong making the test request {}", e)
-        }
+    return if let Err(_) = status {
+        login().expect("Could not login")
     } else {
         session
     }
 }
 /// This function will prompt the user to login. 
-fn login() -> Session{
+fn login() -> Option<Session>{
 
     // TODO #6 Check for environment variables in the login function
 
@@ -73,10 +67,12 @@ fn login() -> Session{
 
     std::io::stdout().flush().unwrap();
     let password = read_password().unwrap();
-
+    
     let username =  username.trim().to_string();
     let password = password.trim().to_string();
 
+    println!("Username '{}', Password: '{}' ",username,password); 
+    
     // TODO Based on some options we should have different types here (Github etc)
     // Parsing the recieved username and password into a Authtype::Taiga route
     let auth_type = lib_routes::AuthType::Taiga{
@@ -91,12 +87,22 @@ fn login() -> Session{
     // TODO handle this properly
     let data = route.request(BASE_URL, &None).expect("Could not login: ");
 
-    let auth_key = data["auth_key"].to_string();
 
-    let session = Session {auth_key};
-    session.save();
+    dbg!(&data);
 
-    session
+    let auth_token = if let Some(auth_token) = data["auth_token"].as_str() {
+        auth_token.to_owned()
+    } else {
+       return None;
+    };
+
+    let session = Session{auth_token};
+
+    println!("Authkey (session) here: {}", session.auth_token);
+
+    session.save().expect("Could not save session.");
+
+    Some(session)
 
     }
 
@@ -127,7 +133,17 @@ mod tests{
 
     #[test]
     fn test_login(){
-        let session = login();
-        println!("Session: {}",session.auth_key)
+        let session = login().expect("error logging in");
+        println!("Session: {}",session.auth_token);
+
+    
+        session.save();
+
+        assert_ne!(session.auth_token,"null");
+    }
+
+    #[test]
+    fn test_initialize(){
+        
     }
 }

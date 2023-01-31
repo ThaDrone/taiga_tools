@@ -51,61 +51,61 @@ pub enum Method{
 pub struct IssueCmd{
 
     #[arg(value_enum)]
-    method:Method,
+    pub method:Method,
    
     /// Required for Read, Update and Delete.
     #[arg(long,required_if_eq_any([("method","read"),("method","update"),("method","delete")]), default_missing_value(None))] 
-    id:Option<String>,
+    pub id:Option<String>,
 
     /// Subject of the Issue, Required when creating a new issue.
     #[arg(long, required_if_eq("method","create"),default_missing_value(None))]
-    subject:Option<String>,
+    pub subject:Option<String>,
     
     // /// Project ID number. Required when creating a new issue.
     // #[arg(long, required_if_eq("method","create"),default_missing_value(None))]
     // project: Option<String>,
     
     #[arg(long, default_missing_value(None))]
-    description: Option<String>,
+    pub description: Option<String>,
     
     #[arg(long, default_missing_value(None))]
-    assigned_to: Option<String>,
+    pub assigned_to: Option<String>,
 
     #[arg(long, default_missing_value(None))]
-    blocked_note: Option<String>,
+    pub blocked_note: Option<String>,
 
     #[arg(long, default_missing_value(None))]
-    is_blocked: Option<bool>,
+    pub is_blocked: Option<bool>,
 
     #[arg(long, default_missing_value(None))]
-    is_closed: Option<bool>,
+   pub   is_closed: Option<bool>,
 
     #[arg(long, default_missing_value(None))]
-    milestone: Option<String>,
+   pub milestone: Option<String>,
     
     /// Add or change the status of the ticket.
     #[arg(long, default_missing_value(None))]
-    status: Option<String>,
+    pub status: Option<String>,
 
     /// Add or change the severity of the issue.
     #[arg(long, default_missing_value(None))]
-    severity: Option<String>,
+   pub  severity: Option<String>,
 
     /// Add the priority of the issue.
     #[arg(long, default_missing_value(None))]
-    priority: Option<String>,
+    pub priority: Option<String>,
 
     /// Use type ID.
     #[arg(long, default_missing_value(None))]
-    typeid: Option<String>,
+    pub typeid: Option<String>,
 
     /// Add any tags that should be added to the issue.
-    #[arg(long, default_missing_value(None))]
-    tags: Option<Vec<String>>,
+    #[arg(long, num_args = 0..,default_missing_value(None))]
+    pub tags: Option<Vec<String>>,
 
     /// Add any watchers (not sure what datatype).
-    #[arg(long, default_missing_value(None))]
-    watchers: Option<Vec<String>>,
+    #[arg(long,num_args = 0.., default_missing_value(None))]
+    pub watchers: Option<Vec<String>>,
 
 }
 
@@ -123,7 +123,8 @@ impl IssueCmd{
     // TODO #9 Can this be generalized? Try to dump the IssueCMD struct into the real "Issue" model struct?
     // TODO #8 Use traits in the crud operations for the Arguments
     fn create(&self, session:&Session, config:&Config) -> Result<(),()>{
-        
+       
+        println!("Tags: {:?}", self.tags.to_owned());
         // TODO #10 Some borrowing shenanigangs going on. Having to copy all values instead of using references.
         let mut issue = Issue{
             subject: self.subject.to_owned(),
@@ -144,7 +145,7 @@ impl IssueCmd{
             number:None,
         };
 
-        issue.create(&Some(session.auth_key.to_owned()));
+        issue.create(&Some(session.auth_token.to_owned()));
         
         Ok(())
 
