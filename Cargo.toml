@@ -3,4 +3,5 @@
 members = [
     "taiga_cli",
     "taiga_lib",
+    "taotest"
 ]
