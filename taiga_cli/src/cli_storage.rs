@@ -72,6 +72,7 @@ pub trait LocalStorage {
             Err(err) => return Err(Error::TomlSerError(err)),
         };
 
+        // TODO #11 make program aware of its location    
         println!("Data to be saved: {}",toml_str);
 
         let file_location = Self::file_location();
